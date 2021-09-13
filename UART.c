@@ -8,6 +8,7 @@
 #include "tm4c123gh6pm.h"
 #include "UART.h"
 
+unsigned char String[10];
 //------------UART_Init------------
 // Initialize the UART for 115200 baud rate (assuming 80 MHz UART clock),
 // 8 bit word length, no parity bits, one stop bit, FIFOs enabled
@@ -80,7 +81,7 @@ char character;
   while(character != CR){ // accepts until <enter> is typed
 // The next line checks that the input is a digit, 0-9.
 // If the character is not 0-9, it is ignored and not echoed
-		character = UART_InChar();
+		//character = UART_InChar();
     if((character>='0') && (character<='9')) {
       number = 10*number+(character-'0');   // this line overflows if above 4294967295
       length++;
@@ -102,16 +103,19 @@ char character;
 // Input: pointer to a NULL-terminated string to be transferred
 // Output: none
 void UART_OutString(unsigned char buffer[]){
-	
+	unsigned long o=0;
 	unsigned long cnt=0;
 	while(buffer[cnt]!= 0){
 		UART_OutChar(buffer[cnt]);
 		cnt++;
 	}
-	
+	  for(;o<10;o++)
+	{
+		String[o]=0;
+	}
 }
 
-unsigned char String[10];
+//unsigned char String[10];
 //unsigned char words[10];
 //-----------------------UART_ConvertUDec-----------------------
 // Converts a 32-bit number in unsigned decimal format
@@ -140,6 +144,7 @@ void UART_ConvertUDec(unsigned long n){
 			mod=mod/10;
 			k++;
 		}
+		String[k]=0;
 		UART_OutChar(BS);
 	}
 }
@@ -173,18 +178,26 @@ void UART_ConvertDistance(unsigned long n){
 		String[i]='*';
 	}
 	else {
-		unsigned long mod=1000;
+		unsigned long mod=10000;
 		unsigned long k=0;
+		//unsigned long once=1; //dummy variable to write the '.' only one time
 		while(mod!=0){
-			String[k]=n/mod+'0';
-			if(mod==1000)	{	k++; String[k]='.'; }
-			n=n%mod;
+			String[k]=n/(mod/10)+'0';
+			if(mod==10000)// && (once==1))
+				{ k++;
+					String[k]='.';
+					//once--;
+					n=n%(mod/10);
+					mod=mod/10;
+					k++;
+				}
+			else {n=n%(mod/10);
 			mod=mod/10;
-			k++;
+			k++;}
 		}
 		
 	}
-  
+
 }
 
 //-----------------------UART_OutDistance-----------------------
@@ -195,7 +208,6 @@ void UART_ConvertDistance(unsigned long n){
 void UART_OutDistance(unsigned long n){
   UART_ConvertDistance(n);      // convert using your function
   UART_OutString(String);       // output using your function
-	UART_OutChar(BS);
 	//unsigned char cm[]="cm";
-	UART_OutString("cm");
+	UART_OutString(" cm");
 }
